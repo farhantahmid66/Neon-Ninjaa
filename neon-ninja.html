@@ -1,0 +1,70 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"><title>Neon Ninja</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0;overflow:hidden;background:#07060f;font-family:system-ui,sans-serif;user-select:none;-webkit-user-select:none;touch-action:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+.b{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);border-radius:50%;border:3px solid;font-weight:800;touch-action:none;display:none;background:rgba(0,0,0,.45)}
+#fi{right:20px;width:92px;height:92px;color:#19f0ff;border-color:#19f0ff;font-size:17px}
+#da{right:126px;width:68px;height:68px;color:#ff3d81;border-color:#ff3d81;font-size:14px}
+</style></head><body>
+<canvas id="g"></canvas><button class="b" id="fi">FIRE</button><button class="b" id="da">DASH</button>
+<script>
+const cv=document.getElementById('g'),x=cv.getContext('2d'),fi=document.getElementById('fi'),da=document.getElementById('da');
+let W,H,K;function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight;K=Math.max(.6,Math.min(W,H)/500)}rs();addEventListener('resize',rs);
+const S=["The city's power grid is failing.|Drones swarm the streets.","Gunner bots join the hunt.|Keep dodging.","The neon towers flicker.|Stay sharp, ninja.","Armored tanks roll in.|Aim for the weak spots.","Warden-X guards the bridge.|Defeat the mini-boss!","Rain hammers the rooftops.|More enemies than ever.","Your shurikens hit harder now.|Keep dashing!","The core tower is in sight.|Almost there.","Sirens scream across the city.|One more push.","The Overlord AI awaits.|Shut it down for good!"];
+const T={d:{r:12,hp:2,sp:1.4,d:8,c:'#ff3d81'},s:{r:12,hp:3,sp:.9,d:6,c:'#ffd23e'},t:{r:22,hp:8,sp:.65,d:14,c:'#a06bff'},B:{r:36,hp:30,sp:.7,d:16,c:'#ff7a1a'},K:{r:46,hp:60,sp:.9,d:20,c:'#ff2e2e'}};
+let st='title',lv=0,kills=0,p,en=[],hr=[],pb=[],eb=[],keys={},jv={x:0,y:0},jo=null,fire=0,st0=0;
+function start(){lv=0;kills=0;p={x:W/2,y:H/2,hp:100,inv:0,cd:0,dc:0,dt:0,dx:1,dy:0};st='story'}
+function mk(t){const s=Math.floor(Math.random()*4),r=Math.random(),e=Object.assign({t},T[t]);if(t=='d'||t=='s')e.hp+=Math.floor(lv/4);e.m=e.hp;e.x=s<2?r*W:s==2?-20:W+20;e.y=s>=2?r*H:s==0?-20:H+20;e.fl=0;e.cd=60+Math.random()*60;return e}
+function load(){en=[];hr=[];pb=[];eb=[];let n=3+Math.floor(lv*1.5),ty=['d'];if(lv>=1)ty.push('s');if(lv>=3)ty.push('t');
+if(lv==9){en.push(mk('K'));n=4}else if(lv==4){en.push(mk('B'));n=3}
+for(let i=0;i<n;i++)en.push(mk(ty[i%ty.length]));p.x=W/2;p.y=H/2;st='play';st0=1;fi.style.display=da.style.display='block'}
+function act(){if(st=='story')load();else if(st!='play')start()}
+function dash(){if(st!='play'||p.dc>0)return;p.dc=70;p.dt=9;p.inv=Math.max(p.inv,14)}
+function shoot(a,e,sp,d,t){eb.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,d})}
+function upd(){if(st!='play')return;
+let mx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0)+jv.x,my=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0)+jv.y;const m=Math.hypot(mx,my);
+if(m>.1){mx/=Math.max(m,1);my/=Math.max(m,1);const n=Math.hypot(mx,my);p.dx=mx/n;p.dy=my/n}
+const sp=p.dt>0?11*K:3.3*K;if(p.dt>0){p.x+=p.dx*sp;p.y+=p.dy*sp}else if(m>.1){p.x+=mx*sp;p.y+=my*sp}
+p.x=Math.min(W-12,Math.max(12,p.x));p.y=Math.min(H-12,Math.max(12,p.y));p.cd--;p.dc--;p.dt--;p.inv--;
+if((fire||keys[' '])&&p.cd<=0&&en.length){let b=null,bd=1e9;for(const e of en){const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<bd){bd=d;b=e}}
+const a=Math.atan2(b.y-p.y,b.x-p.x);pb.push({x:p.x,y:p.y,vx:Math.cos(a)*9*K,vy:Math.sin(a)*9*K,l:70});p.cd=14}
+for(const e of en){const dx=p.x-e.x,dy=p.y-e.y,d=Math.hypot(dx,dy)||1,s=e.sp*K*(1+lv*.03);e.fl--;e.cd--;
+if(e.t=='s'){if(d>230*K){e.x+=dx/d*s;e.y+=dy/d*s}else if(d<150*K){e.x-=dx/d*s;e.y-=dy/d*s}if(e.cd<=0){shoot(Math.atan2(dy,dx),e,3.2*K,6);e.cd=110}}
+else{e.x+=dx/d*s;e.y+=dy/d*s}
+if(e.t=='B'&&e.cd<=0){const a=Math.atan2(dy,dx);for(let i=-2;i<=2;i++)shoot(a+i*.25,e,3.2*K,8);e.cd=90}
+if(e.t=='K'&&e.cd<=0){const a=Math.atan2(dy,dx);for(let i=-1;i<=1;i++)shoot(a+i*.2,e,3.6*K,9);if(Math.random()<.5)for(let i=0;i<10;i++)shoot(i*.628,e,2.6*K,7);e.cd=75}
+if(d<(e.r+12)*K&&p.inv<=0){p.hp-=e.d;p.inv=45}}
+for(const b of pb){b.x+=b.vx;b.y+=b.vy;b.l--;for(const e of en)if(b.l>0&&Math.hypot(e.x-b.x,e.y-b.y)<e.r*K+5){e.hp-=1+Math.floor(lv/3);e.fl=5;b.l=0}}
+pb=pb.filter(b=>b.l>0);
+for(const b of eb){b.x+=b.vx;b.y+=b.vy;if(p.inv<=0&&Math.hypot(p.x-b.x,p.y-b.y)<14*K){p.hp-=b.d;p.inv=40;b.x=-999}}
+eb=eb.filter(b=>b.x>-50&&b.x<W+50&&b.y>-50&&b.y<H+50);
+for(let i=en.length-1;i>=0;i--){const e=en[i];if(e.hp<=0){kills++;if(Math.random()<.18||e.t=='B'||e.t=='K')hr.push({x:e.x,y:e.y});en.splice(i,1)}}
+for(let i=hr.length-1;i>=0;i--)if(Math.hypot(hr[i].x-p.x,hr[i].y-p.y)<26*K){p.hp=Math.min(100,p.hp+15);hr.splice(i,1)}
+if(p.hp<=0){st='over';fi.style.display=da.style.display='none'}
+else if(!en.length){fi.style.display=da.style.display='none';if(lv==9)st='win';else{lv++;p.hp=Math.min(100,p.hp+30);st='story'}}}
+function txt(t,y,sz,c){x.fillStyle=c;x.font='bold '+sz+'px system-ui';x.textAlign='center';x.fillText(t,W/2,y)}
+function scr(a,b,c){const f=Math.max(16,Math.min(W,H)/20);x.fillStyle='rgba(7,6,15,.9)';x.fillRect(0,0,W,H);const y=H*.3;
+txt(a,y,f*1.9,'#19f0ff');b.split('|').forEach((l,i)=>txt(l,y+f*2+i*f*1.4,f,'#f2e9d8'));txt(c,H*.68,f*.95,'#ff3d81');txt('Developed by Tahmid',H-Math.max(30,f*1.5),f*.8,'#8a86a8')}
+function circ(X,Y,r,c){x.fillStyle=c;x.beginPath();x.arc(X,Y,r,0,7);x.fill()}
+function draw(){x.fillStyle='#0b0a1a';x.fillRect(0,0,W,H);x.strokeStyle='#17143a';x.lineWidth=1;const g=50*K;for(let i=0;i<W;i+=g){x.beginPath();x.moveTo(i,0);x.lineTo(i,H);x.stroke()}for(let i=0;i<H;i+=g){x.beginPath();x.moveTo(0,i);x.lineTo(W,i);x.stroke()}
+for(const h of hr)circ(h.x,h.y,8*K,'#39ff88');
+for(const e of en){x.shadowColor=e.c;x.shadowBlur=14;circ(e.x,e.y,e.r*K,e.fl>0?'#fff':e.c);x.shadowBlur=0;x.fillStyle='#300';x.fillRect(e.x-e.r*K,e.y-e.r*K-9,e.r*2*K,4);x.fillStyle='#ff5577';x.fillRect(e.x-e.r*K,e.y-e.r*K-9,e.r*2*K*Math.max(0,e.hp/e.m),4)}
+for(const b of eb)circ(b.x,b.y,5*K,'#ffb000');for(const b of pb)circ(b.x,b.y,4*K,'#19f0ff');
+if(p&&st!='title'){x.shadowColor='#19f0ff';x.shadowBlur=16;circ(p.x,p.y,12*K,p.inv>0&&p.inv%6<3?'#fff':'#19f0ff');x.shadowBlur=0;circ(p.x+p.dx*7*K,p.y+p.dy*7*K,3.5*K,'#07060f')}
+if(st=='play'||st=='story'){const bw=Math.min(180,W*.4);x.fillStyle='#300';x.fillRect(12,14,bw,12);x.fillStyle='#39ff88';x.fillRect(12,14,bw*Math.max(0,p.hp)/100,12);x.textAlign='right';x.fillStyle='#f2e9d8';x.font='bold 15px system-ui';x.fillText('Lv '+(lv+1)+'/10 · Kills '+kills,W-12,26)}
+if(jo&&st=='play'){x.strokeStyle='rgba(25,240,255,.4)';x.lineWidth=3;x.beginPath();x.arc(jo.x,jo.y,40,0,7);x.stroke();circ(jo.x+jv.x*40,jo.y+jv.y*40,16,'rgba(25,240,255,.5)')}
+if(st=='title')scr('NEON NINJA','Fight through 10 levels of the neon city.|Shut down the Overlord AI.','Tap to start');
+if(st=='story')scr('LEVEL '+(lv+1),S[lv],'Tap to fight');
+if(st=='over')scr('SYSTEM DOWN','Reached level '+(lv+1)+' · '+kills+' kills','Tap to retry');
+if(st=='win')scr('YOU WIN!','The Overlord is offline.|The city is safe!','Tap to play again')}
+function loop(){upd();draw();requestAnimationFrame(loop)}loop();
+addEventListener('keydown',e=>{const k=e.key.length==1?e.key.toLowerCase():e.key;keys[k]=1;if(k==' '||k=='Enter'){e.preventDefault();if(st!='play')act()}if(k=='Shift')dash();if(k.startsWith('Arrow'))e.preventDefault()});
+addEventListener('keyup',e=>{keys[e.key.length==1?e.key.toLowerCase():e.key]=0});
+cv.addEventListener('pointerdown',e=>{if(st!='play'){act();return}if(!jo){jo={id:e.pointerId,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)}});
+cv.addEventListener('pointermove',e=>{if(jo&&jo.id==e.pointerId){const dx=e.clientX-jo.x,dy=e.clientY-jo.y,d=Math.hypot(dx,dy);jv=d>8?{x:dx/Math.max(d,40),y:dy/Math.max(d,40)}:{x:0,y:0}}});
+const up=e=>{if(jo&&jo.id==e.pointerId){jo=null;jv={x:0,y:0}}};cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+fi.addEventListener('pointerdown',e=>{e.preventDefault();fire=1});['pointerup','pointercancel','pointerleave'].forEach(v=>fi.addEventListener(v,()=>fire=0));
+da.addEventListener('pointerdown',e=>{e.preventDefault();dash()});
+</script></body></html>
